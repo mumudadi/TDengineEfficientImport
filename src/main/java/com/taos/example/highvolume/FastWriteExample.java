@@ -28,7 +28,7 @@ public class FastWriteExample {
     }
 
     public static void main(String[] args) throws InterruptedException, SQLException {
-        int readTaskCount = args.length > 0 ? Integer.parseInt(args[0]) : 1;
+        int readTaskCount = args.length > 0 ? Integer.parseInt(args[0]) : 2;
         int writeTaskCount = args.length > 1 ? Integer.parseInt(args[1]) : 10;
         int tableCount = args.length > 2 ? Integer.parseInt(args[2]) : 10;
         int maxBatchSize = args.length > 3 ? Integer.parseInt(args[3]) : 3000;
@@ -50,20 +50,13 @@ public class FastWriteExample {
 
         // create reading tasks and start reading threads
         int tableCountPerTask = tableCount / readTaskCount;
-        /*for (int i = 0; i < readTaskCount; ++i) {
-            ReadTask task = new ReadTask(i, taskQueues, 1);
+        for (int i = 0; i < readTaskCount; ++i) {
+            ReadTask task = new ReadTask(i, taskQueues, readTaskCount);
             Thread t = new Thread(task);
             t.setName("ReadThread-" + i);
             t.start();
-        }*/
-        ReadTask task = new ReadTask(0, taskQueues, -1500000);
-        Thread t = new Thread(task);
-        t.setName("ReadThread-" + 0);
-        t.start();
-        ReadTask task2 = new ReadTask(1, taskQueues, 1500000);
-        Thread t2 = new Thread(task2);
-        t2.setName("ReadThread-" + 1);
-        t2.start();
+        }
+
 
         Runtime.getRuntime().addShutdownHook(new Thread(FastWriteExample::stopAll));
 

@@ -122,6 +122,7 @@ public class SQLWriter {
         if (bufferedCount == maxBatchSize) {
             flush();
         }*/
+        //bufferedCount += 1;
         String tbName = "bus_gis_loc_vehicle";
         if (tbValues.containsKey(tbName)) {
             tbValues.put(tbName, tbValues.get(tbName) + line);

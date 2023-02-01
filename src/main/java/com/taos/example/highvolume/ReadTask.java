@@ -79,7 +79,7 @@ class ReadTask implements Runnable {
             int queueId=0;
             Date now = DateUtil.beginOfYear(new Date());
             for(int i=0;i<count.intValue();i+=pageSize) {
-                List<Entity> entityList = SqlExecutor.query(conn, StrFormatter.format("select * from bus_gis_loc_vehicle where locvehicle_id {}{} limit {},{}",tableCount>0?">=":"<", Math.abs(tableCount),i,pageSize), new EntityListHandler());
+                List<Entity> entityList = SqlExecutor.query(conn, StrFormatter.format("select * from bus_gis_loc_vehicle where MOD(locvehicle_id,{})={} limit {},{}",tableCount, taskId,i,pageSize), new EntityListHandler());
                 StrBuilder sb = StrBuilder.create();
                 if(ObjUtil.isNotEmpty(entityList) && active) {
                     for(Entity entity:entityList) {
