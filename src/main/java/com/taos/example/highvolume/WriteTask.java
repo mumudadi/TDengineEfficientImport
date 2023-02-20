@@ -26,7 +26,8 @@ class WriteTask implements Runnable {
     public void run() {
         Console.log("started");
         String line = null; // data getting from the queue just now.
-        SQLWriter writer = new SQLWriter(maxBatchSize);
+        //SQLWriter writer = new SQLWriter(maxBatchSize);
+        StmtWriter writer = new StmtWriter(maxBatchSize);
         try {
             writer.init();
             while (active) {

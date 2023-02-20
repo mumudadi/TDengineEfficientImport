@@ -17,6 +17,7 @@ import cn.hutool.db.ds.simple.SimpleDataSource;
 import cn.hutool.db.handler.EntityListHandler;
 import cn.hutool.db.handler.NumberHandler;
 import cn.hutool.db.sql.SqlExecutor;
+import cn.hutool.json.JSONUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +84,7 @@ class ReadTask implements Runnable {
                 StrBuilder sb = StrBuilder.create();
                 if(ObjUtil.isNotEmpty(entityList) && active) {
                     for(Entity entity:entityList) {
-                        String ts = DateUtil.formatDateTime(DateUtil.offsetSecond(now,entity.getInt("locvehicle_id")));
+                        /*String ts = DateUtil.formatDateTime(DateUtil.offsetSecond(now,entity.getInt("locvehicle_id")));
                         sb.append("(").append(StrFormatter.format("'{}',",ts)).append( entity.values().stream().map(e -> {
                             if(ObjUtil.isNull(e)) {
                                 return "NULL";
@@ -93,11 +94,18 @@ class ReadTask implements Runnable {
                             }
                             return Convert.toStr(e);
                         }).collect(Collectors.joining(",")))
-                        .append(")").append(" ");
+                        .append(")").append(" ");*/
+                        entity.set("_ts",entity.getLong("loc_time")*1000000);
+                        entity.remove("locvehicle_id");
+                        List<String> lineList = JsonConvertInflux.convert(JSONUtil.toJsonStr(entity), "BUS_GIS_LOC_VEHICLE","ref_waybill_no");
+                        //sb.append(lineList.get(0));
+                        queueId%=this.queueCount;
+                        taskQueues.get(queueId).put(lineList.get(0));
+                        queueId++;
                     }
-                    queueId%=this.queueCount;
+                   /* queueId%=this.queueCount;
                     taskQueues.get(queueId).put(sb.toString());
-                    queueId++;
+                    queueId++;*/
                 }
             }
 
