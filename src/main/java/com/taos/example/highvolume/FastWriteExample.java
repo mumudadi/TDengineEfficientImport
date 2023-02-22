@@ -29,7 +29,7 @@ public class FastWriteExample {
 
     public static void main(String[] args) throws InterruptedException, SQLException {
         int readTaskCount = args.length > 0 ? Integer.parseInt(args[0]) : 2;
-        int writeTaskCount = args.length > 1 ? Integer.parseInt(args[1]) : 10;
+        int writeTaskCount = args.length > 1 ? Integer.parseInt(args[1]) : 8;
         int tableCount = args.length > 2 ? Integer.parseInt(args[2]) : 10;
         int maxBatchSize = args.length > 3 ? Integer.parseInt(args[3]) : 3000;
 

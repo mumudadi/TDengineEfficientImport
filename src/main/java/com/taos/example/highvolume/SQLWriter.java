@@ -82,7 +82,7 @@ public class SQLWriter {
     public void init() throws SQLException {
         conn = getConnection();
         stmt = conn.createStatement();
-        stmt.execute("use demo");
+        stmt.execute("use shangma_sys");
         ResultSet rs = stmt.executeQuery("show variables");
         while (rs.next()) {
             String configName = rs.getString(1);
@@ -156,7 +156,7 @@ public class SQLWriter {
         bufferedCount = 0;
     }
 
-    private void executeSQL(String sql) throws SQLException {
+    public void executeSQL(String sql) throws SQLException {
         try {
             stmt.executeUpdate(sql);
         } catch (SQLException e) {

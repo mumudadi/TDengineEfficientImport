@@ -11,6 +11,7 @@ import cn.hutool.core.text.StrFormatter;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.PageUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
 import cn.hutool.db.DbUtil;
 import cn.hutool.db.Entity;
 import cn.hutool.db.ds.simple.SimpleDataSource;
@@ -68,44 +69,60 @@ class ReadTask implements Runnable {
         Connection conn = null;
 
         try {
-            /*while (it.hasNext() && active) {
-                String line = it.next();
-                int queueId = getQueueId(line);
-                taskQueues.get(queueId).put(line);
-            }*/
 
             conn = ds.getConnection();
             Number count = SqlExecutor.query(conn, "select count(*) from bus_gis_loc_vehicle", new NumberHandler());
             Integer pageSize = 1000;
             int queueId=0;
             Date now = DateUtil.beginOfYear(new Date());
+            String deviceSql = "shangma_sys.bus_comm_location_{} USING shangma_sys.bus_comm_location TAGS('{}') VALUES ('{}','{}',{},{})";
             for(int i=0;i<count.intValue();i+=pageSize) {
                 List<Entity> entityList = SqlExecutor.query(conn, StrFormatter.format("select * from bus_gis_loc_vehicle where MOD(locvehicle_id,{})={} limit {},{}",tableCount, taskId,i,pageSize), new EntityListHandler());
-                StrBuilder sb = StrBuilder.create();
+                StrBuilder sb = StrBuilder.create("INSERT INTO shangma_sys.`bus_gis_loc_vehicle` values ");
+                StrBuilder sb2 = StrBuilder.create("INSERT INTO ");
                 if(ObjUtil.isNotEmpty(entityList) && active) {
                     for(Entity entity:entityList) {
-                        /*String ts = DateUtil.formatDateTime(DateUtil.offsetSecond(now,entity.getInt("locvehicle_id")));
+                        String ts = DateUtil.formatDateTime(DateUtil.offsetSecond(now,entity.getInt("locvehicle_id")));
+                        entity.remove("locvehicle_id");
                         sb.append("(").append(StrFormatter.format("'{}',",ts)).append( entity.values().stream().map(e -> {
                             if(ObjUtil.isNull(e)) {
                                 return "NULL";
                             }
-                            if(e instanceof String || e instanceof Timestamp) {
+                            if(e instanceof String) {
                                 return "'"+Convert.toStr(e)+"'";
+                            }
+                            if(e instanceof Timestamp) {
+                                e = (((Timestamp) e).getTime());
                             }
                             return Convert.toStr(e);
                         }).collect(Collectors.joining(",")))
-                        .append(")").append(" ");*/
-                        entity.set("_ts",entity.getLong("loc_time")*1000000);
+                        .append(")").append(" ");
+
+                        String deviceId = "CL"+SecureUtil.md5(entity.getStr("vehicle_number")).toUpperCase();
+                        String locTime = entity.getStr("loc_time");
+                        //设备sql
+
+                        String exeSql = StrFormatter.format(deviceSql,deviceId,deviceId,locTime,locTime,entity.getStr("lng"),entity.getStr("lat"));
+                        sb2.append(exeSql).append(" ");
+                       /* entity.set("_ts",entity.getLong("loc_time")*1000000);
                         entity.remove("locvehicle_id");
                         List<String> lineList = JsonConvertInflux.convert(JSONUtil.toJsonStr(entity), "BUS_GIS_LOC_VEHICLE","ref_waybill_no");
-                        //sb.append(lineList.get(0));
                         queueId%=this.queueCount;
                         taskQueues.get(queueId).put(lineList.get(0));
-                        queueId++;
+                        *//**
+                         * 设备信息
+                         *//*
+                        DeviceLocation deviceLocation = entity.toBean(DeviceLocation.class);
+                        deviceLocation.setDeviceId("CL"+ SecureUtil.md5(entity.getStr("vehicle_number")).toUpperCase());
+                        deviceLocation.set_ts(entity.getLong("loc_time")*1000000);
+                        List<String> deviceList = JsonConvertInflux.convert(JSONUtil.toJsonStr(deviceLocation), "BUS_COMM_LOCATION","deviceId");
+                        taskQueues.get(queueId).put(deviceList.get(0));
+                        queueId++;*/
                     }
-                   /* queueId%=this.queueCount;
+                    queueId%=this.queueCount;
                     taskQueues.get(queueId).put(sb.toString());
-                    queueId++;*/
+                    taskQueues.get(queueId).put(sb2.toString());
+                    queueId++;
                 }
             }
 
@@ -113,6 +130,7 @@ class ReadTask implements Runnable {
             Console.log(e, "SQL error!");
         }
         catch (Exception e) {
+            e.printStackTrace();
             Console.log("Read Task Error", e);
         }finally {
             DbUtil.close(conn);

@@ -26,8 +26,8 @@ class WriteTask implements Runnable {
     public void run() {
         Console.log("started");
         String line = null; // data getting from the queue just now.
-        //SQLWriter writer = new SQLWriter(maxBatchSize);
-        StmtWriter writer = new StmtWriter(maxBatchSize);
+        SQLWriter writer = new SQLWriter(maxBatchSize);
+        //StmtWriter writer = new StmtWriter(maxBatchSize);
         try {
             writer.init();
             while (active) {
@@ -37,11 +37,12 @@ class WriteTask implements Runnable {
                 }
                 if (line != null) {
                     // parse raw data and buffer the data.
-                    writer.processLine(line);
-                } else if (writer.hasBufferedValues()) {
+                   // writer.processLine(line);
+                    writer.executeSQL(line);
+                } /*else if (writer.hasBufferedValues()) {
                     // write data immediately if no more data in the queue
                     writer.flush();
-                } else {
+                }*/ else {
                     // sleep a while to avoid high CPU usage if no more data in the queue and no buffered records, .
                     Thread.sleep(100);
                 }
