@@ -79,29 +79,28 @@ class ReadTask implements Runnable {
             String gisLocSql = "shangma_sys.bus_gis_loc_vehicle_{} USING shangma_sys.bus_gis_loc_vehicle TAGS('{}') VALUES ('{}',{})";
             for(int i=0;i<count.intValue();i+=pageSize) {
                 List<Entity> entityList = SqlExecutor.query(conn, StrFormatter.format("select * from bus_gis_loc_vehicle where MOD(locvehicle_id,{})={} limit {},{}",tableCount, taskId,i,pageSize), new EntityListHandler());
-                StrBuilder sb = StrBuilder.create("INSERT INTO shangma_sys.`bus_gis_loc_vehicle` values ");
+                StrBuilder sb = StrBuilder.create("INSERT INTO ");
                 StrBuilder sb2 = StrBuilder.create("INSERT INTO ");
                 if(ObjUtil.isNotEmpty(entityList) && active) {
                     for(Entity entity:entityList) {
+                        entity.remove("locvehicle_id");
                         String locTime = entity.getStr("loc_time");
                         String ts = DateUtil.parse(locTime).toString();
-                        entity.remove("locvehicle_id");
-                        sb.append("(").append(StrFormatter.format("'{}',",ts)).append( entity.values().stream().map(e -> {
-                            if(ObjUtil.isNull(e)) {
+                        String values = entity.values().stream().map(e -> {
+                            if (ObjUtil.isNull(e)) {
                                 return "NULL";
                             }
-                            if(e instanceof String) {
-                                return "'"+Convert.toStr(e)+"'";
+                            if (e instanceof String) {
+                                return "'" + Convert.toStr(e) + "'";
                             }
-                            if(e instanceof Timestamp) {
+                            if (e instanceof Timestamp) {
                                 e = (((Timestamp) e).getTime());
                             }
                             return Convert.toStr(e);
-                        }).collect(Collectors.joining(",")))
-                        .append(")").append(" ");
-
+                        }).collect(Collectors.joining(","));
                         String deviceId = "YCL"+SecureUtil.md5(entity.getStr("vehicle_number")).toUpperCase();
-
+                        String exeLocSql = StrFormatter.format(gisLocSql,deviceId,deviceId,locTime,values);
+                        sb.append(exeLocSql).append(" ");
                         //设备sql
 
                         String exeSql = StrFormatter.format(deviceSql,deviceId,deviceId,locTime,locTime,entity.getStr("lng"),entity.getStr("lat"));
@@ -123,7 +122,7 @@ class ReadTask implements Runnable {
                     }
                     queueId%=this.queueCount;
                     taskQueues.get(queueId).put(sb.toString());
-                    //taskQueues.get(queueId).put(sb2.toString());
+                    taskQueues.get(queueId).put(sb2.toString());
                     queueId++;
                 }
             }

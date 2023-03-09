@@ -8,6 +8,7 @@ import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.pinyin.PinyinUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -23,6 +24,8 @@ import java.util.stream.Collectors;
  * @author mumud
  */
 public class JsonConvertInflux {
+    private static  Pattern compile = Pattern.compile("[A-Z]");
+
     public static List<String> convert(List<String> jsonList, String topic,String tagKey) {
         return jsonList.stream().map(json -> convert(JSONUtil.parseObj(json),topic,tagKey)).collect(Collectors.toList());
     }
@@ -45,16 +48,29 @@ public class JsonConvertInflux {
             tagVlaue = "null";
         }
         StrBuilder influxData = StrBuilder.create(topic.toLowerCase());
-        influxData.append(",tname=").append(topic.toLowerCase()).append("_").append(tagVlaue.toLowerCase())
-                .append(",").append(underline(tagKey)).append("=").append(tagVlaue).append(" ");
+        influxData.append(",tname=").append(topic.toLowerCase()).append("_").append(tagVlaue.toLowerCase());
+        if(StrUtil.isNotEmpty(tagKey)) {
+            influxData.append(",").append(underline(tagKey)).append("=").append(tagVlaue);
+        }
+        influxData.append(" ");
+        Object _ts = jsonObj.get("_ts");
+        if(ObjUtil.isEmpty(_ts)) {
+            _ts = System.currentTimeMillis() + RandomUtil.randomNumbers(6);
+        }
         for(String key : jsonObj.keySet()) {
             if("_ts".equals(key) || tagKey.equals(key)) {
                 continue;
             }
             influxData.append(underline(key)).append("=");
             Object value = jsonObj.get(key);
-            if(value instanceof BigDecimal || value instanceof Integer) {
-                influxData.append(value).append("f32");
+            //保留更新时间戳精度
+            if("_update".equals(key)) {
+                value = Convert.toStr(_ts);
+            }
+            if(value instanceof Integer) {
+                influxData.append(value).append("i32");
+            }  else if(value instanceof BigDecimal || value instanceof Double) {
+                influxData.append(value).append("f64");
             } else if(value instanceof Long) {
                 influxData.append(value).append("i64");
             } else {
@@ -67,11 +83,8 @@ public class JsonConvertInflux {
         }
         influxData.delTo(influxData.length()-1);
         influxData.append(" ");
-        if(ObjUtil.isNotEmpty(jsonObj.getLong("_ts"))) {
-            influxData.append(jsonObj.getLong("_ts"));
-        } else {
-            influxData.append(System.currentTimeMillis()).append(RandomUtil.randomNumbers(6));
-        }
+        influxData.append(_ts);
+
         return influxData.toString();
     }
 
@@ -79,7 +92,6 @@ public class JsonConvertInflux {
      * 将驼峰转为下划线
      */
     public static String underline(String str) {
-        Pattern compile = Pattern.compile("[A-Z]");
         Matcher matcher = compile.matcher(str);
         StringBuffer sb = new StringBuffer();
         while(matcher.find()) {
@@ -88,4 +100,5 @@ public class JsonConvertInflux {
         matcher.appendTail(sb);
         return sb.toString();
     }
+
 }

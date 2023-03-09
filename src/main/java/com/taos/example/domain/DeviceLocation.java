@@ -1,4 +1,4 @@
-package com.taos.example.highvolume;
+package com.taos.example.domain;
 
 import java.math.BigDecimal;
 import java.util.Date;
