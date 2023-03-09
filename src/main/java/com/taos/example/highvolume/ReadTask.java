@@ -1,5 +1,6 @@
 package com.taos.example.highvolume;
 
+import cn.hutool.core.collection.CollStreamUtil;
 import cn.hutool.core.collection.LineIter;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.DateUtil;
@@ -29,6 +30,7 @@ import java.sql.Timestamp;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.stream.Collectors;
 
@@ -65,24 +67,24 @@ class ReadTask implements Runnable {
     public void run() {
         Console.log("started");
        // Iterator<String> it = new MockDataSource("tb" + this.taskId, tableCount);
-        DataSource ds = new SimpleDataSource("jdbc:mysql://127.0.0.1:3306/shangma_sys", "root", "289862d2-d782-4020-96b1-605d2837cfab");
+        DataSource ds = new SimpleDataSource("jdbc:mysql://127.0.0.1:3306/shangma_sys_pro", "root", "289862d2-d782-4020-96b1-605d2837cfab");
         Connection conn = null;
-
         try {
-
             conn = ds.getConnection();
             Number count = SqlExecutor.query(conn, "select count(*) from bus_gis_loc_vehicle", new NumberHandler());
             Integer pageSize = 1000;
             int queueId=0;
             Date now = DateUtil.beginOfYear(new Date());
             String deviceSql = "shangma_sys.bus_comm_location_{} USING shangma_sys.bus_comm_location TAGS('{}') VALUES ('{}','{}',{},{})";
+            String gisLocSql = "shangma_sys.bus_gis_loc_vehicle_{} USING shangma_sys.bus_gis_loc_vehicle TAGS('{}') VALUES ('{}',{})";
             for(int i=0;i<count.intValue();i+=pageSize) {
                 List<Entity> entityList = SqlExecutor.query(conn, StrFormatter.format("select * from bus_gis_loc_vehicle where MOD(locvehicle_id,{})={} limit {},{}",tableCount, taskId,i,pageSize), new EntityListHandler());
                 StrBuilder sb = StrBuilder.create("INSERT INTO shangma_sys.`bus_gis_loc_vehicle` values ");
                 StrBuilder sb2 = StrBuilder.create("INSERT INTO ");
                 if(ObjUtil.isNotEmpty(entityList) && active) {
                     for(Entity entity:entityList) {
-                        String ts = DateUtil.formatDateTime(DateUtil.offsetSecond(now,entity.getInt("locvehicle_id")));
+                        String locTime = entity.getStr("loc_time");
+                        String ts = DateUtil.parse(locTime).toString();
                         entity.remove("locvehicle_id");
                         sb.append("(").append(StrFormatter.format("'{}',",ts)).append( entity.values().stream().map(e -> {
                             if(ObjUtil.isNull(e)) {
@@ -98,8 +100,8 @@ class ReadTask implements Runnable {
                         }).collect(Collectors.joining(",")))
                         .append(")").append(" ");
 
-                        String deviceId = "CL"+SecureUtil.md5(entity.getStr("vehicle_number")).toUpperCase();
-                        String locTime = entity.getStr("loc_time");
+                        String deviceId = "YCL"+SecureUtil.md5(entity.getStr("vehicle_number")).toUpperCase();
+
                         //设备sql
 
                         String exeSql = StrFormatter.format(deviceSql,deviceId,deviceId,locTime,locTime,entity.getStr("lng"),entity.getStr("lat"));
@@ -121,7 +123,7 @@ class ReadTask implements Runnable {
                     }
                     queueId%=this.queueCount;
                     taskQueues.get(queueId).put(sb.toString());
-                    taskQueues.get(queueId).put(sb2.toString());
+                    //taskQueues.get(queueId).put(sb2.toString());
                     queueId++;
                 }
             }
