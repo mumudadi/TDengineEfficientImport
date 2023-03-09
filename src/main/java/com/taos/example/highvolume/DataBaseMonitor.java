@@ -14,7 +14,7 @@ public class DataBaseMonitor {
 
     public DataBaseMonitor init() throws SQLException {
         if (conn == null) {
-            String jdbcURL = "jdbc:TAOS://192.168.0.66:6030?user=root&password=taosdata";
+            String jdbcURL = "jdbc:TAOS-RS://192.168.0.66:6041/shangma_sys?user=root&password=taosdata";
             conn = DriverManager.getConnection(jdbcURL);
             stmt = conn.createStatement();
         }

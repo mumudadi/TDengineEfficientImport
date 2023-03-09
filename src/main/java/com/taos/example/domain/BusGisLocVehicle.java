@@ -1,8 +1,5 @@
 package com.taos.example.domain;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.Accessors;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -14,9 +11,7 @@ import java.util.Date;
  * @author shangma
  * @date 2022-02-15
  */
-@Data
-@NoArgsConstructor
-@Accessors(chain = true)
+
 public class BusGisLocVehicle implements Serializable {
     private static final long serialVersionUID = 1L;
 
