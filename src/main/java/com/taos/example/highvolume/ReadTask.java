@@ -75,7 +75,7 @@ class ReadTask implements Runnable {
             Integer pageSize = 1000;
             int queueId=0;
             Date now = DateUtil.beginOfYear(new Date());
-            String deviceSql = "shangma_sys.bus_comm_location_{} USING shangma_sys.bus_comm_location TAGS('{}','{}') VALUES ('{}','{}',{},{})";
+            String deviceSql = "shangma_sys.bus_comm_location_{} USING shangma_sys.bus_comm_location TAGS('{}') VALUES ('{}','{}',{},{})";
             String gisLocSql = "shangma_sys.bus_gis_loc_vehicle_{} USING shangma_sys.bus_gis_loc_vehicle TAGS('{}','{}') VALUES ('{}',{})";
             for(int i=0;i<count.intValue();i+=pageSize) {
                 List<Entity> entityList = SqlExecutor.query(conn, StrFormatter.format("select * from bus_gis_loc_vehicle where MOD(locvehicle_id,{})={} limit {},{}",tableCount, taskId,i,pageSize), new EntityListHandler());
@@ -103,7 +103,7 @@ class ReadTask implements Runnable {
                         sb.append(exeLocSql).append(" ");
                         //设备sql
 
-                        String exeSql = StrFormatter.format(deviceSql,deviceId,deviceId,deviceId,locTime,locTime,entity.getStr("lng"),entity.getStr("lat"));
+                        String exeSql = StrFormatter.format(deviceSql,deviceId,deviceId,locTime,locTime,entity.getStr("lng"),entity.getStr("lat"));
                         sb2.append(exeSql).append(" ");
                        /* entity.set("_ts",entity.getLong("loc_time")*1000000);
                         entity.remove("locvehicle_id");

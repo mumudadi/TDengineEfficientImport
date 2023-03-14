@@ -70,7 +70,7 @@ public class SQLWriter {
      * @throws SQLException
      */
     private static Connection getConnection() throws SQLException {
-        String jdbcURL = "jdbc:TAOS-RS://192.168.0.66:6041/shangma_sys?user=root&password=taosdata";
+        String jdbcURL = "jdbc:TAOS://192.168.0.66:6030/shangma_sys?user=root&password=taosdata&timezone=UTC+8";
         return DriverManager.getConnection(jdbcURL);
     }
 
